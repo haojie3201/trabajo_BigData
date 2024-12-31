@@ -1,0 +1,460 @@
+---
+title: |
+  ![](imagenes/1.png){width=0.5in  style="opacity: 0.4;"}
+  Ciencia de Datos: Tendencias Globales en Salarios y Empleos
+  
+description: |
+  Exploramos las tendencias globales de salarios y empleos en ciencia de datos (2020-2023)
+  
+abstract: Este trabajo explora las tendencias laborales y salariales en ciencia de datos, enfocándose en la evolución de salarios y diferencias regionales，utilizando herramientas de análisis y visualización para ofrecer una perspectiva integral del mercado laboral.
+
+author:
+- name: zhang haojie (zha2@alumni.uv.es)
+  affiliation: Universitat de València
+  affiliation-url: https://www.uv.es
+  
+date: 2024-12-31
+
+categories: [trabajo BigData]  
+
+format:
+  html:
+    theme: morph   
+    highlight-style: a11y   
+    page-layout: full  
+    fontcolor: black              #- color del texto
+    backgroundcolor: "#e3fcff"   #- color de fondo de la página
+
+#- Quarto incluye un title-block al principio de los artículos con elementos como: title, subtitle, authors, date, doi, and abstract.
+# title-block-banner: pone un banner en el title-block: pondrá el title, subtitle, description, y categories dentro del banner
+# https://quarto.org/docs/authoring/title-blocks.html#title-banners
+title-block-banner: "#86bced"  #- {true, false, "#FFDDFF",  "image.jpg"}
+# title-block-style: modifica el estilo del title-block
+# https://quarto.org/docs/authoring/title-blocks.html
+title-block-style: default #- {default, plain, none}
+# tb se puede especificar el color del texto dentro del banner
+title-block-banner-color: azul
+
+css: assets/my_styles.css           #- si queréis tunear con CSS
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F, comment = NA)
+```
+
+
+## 1. Introducción
+
+La ciencia de datos, considerada por Harvard Business Review como "la profesión más sexy del siglo XXI", se ha consolidado como un campo interdisciplinario clave en la era del Big Data. Combinando métodos científicos, algoritmos y conocimientos de negocio, permite extraer valor de grandes volúmenes de datos para generar tendencias e ideas que impulsan la innovación y la toma de decisiones estratégicas.
+
+Este trabajo surge del interés 🤩 que he desarrollado durante este semestre al estudiar Big Data y sus aplicaciones en el análisis de información. En este contexto, he seleccionado el conjunto de datos titulado “Data Science Salaries 2023”, disponible en Kaggle, para realizar un análisis y visualización de datos.
+
+El conjunto de datos recoge información detallada sobre los salarios de los profesionales en ciencia de datos a nivel global. Incluye variables como los títulos de los puestos, niveles de experiencia, tipos de contrato (remoto o presencial), distribución geográfica, y salarios en diversas monedas convertidos a dólares estadounidenses para facilitar la comparación. También refleja las tendencias más recientes del mercado laboral en el ámbito de la ciencia de datos.
+
+
+- - - 
+
+## 2. Datos
+
+::: {.panel-tabset}
+
+### DATOS
+
+Los datos de Data Science Salaries 2023 💸 provienen de la tabla del dataset de Kaggle: [Data Science Salaries 2023 💸](https://www.kaggle.com/datasets/arnabchaki/data-science-salaries-2023).
+
+### Códigos
+
+```{r}
+
+# Paquetes que voy a usar:
+library(tidyverse)
+library(plotly)
+library(gganimate)
+library(DT)
+library(countrycode)
+library(tidyverse)
+library(sf)
+library(ggplot2)
+library(colorspace)
+library(readxl)
+library(viridis)
+library(ggthemes)
+
+# Cargar datos:
+my_dato <- rio::import(here::here("datos", "ds_salaries.csv"))
+
+# Manejo de valores faltantes
+my_dato <- na.omit(my_dato)
+```
+
+:::
+
+
+- - - 
+
+## 3. Visualización de la tabla de datos
+
+```{r}
+my_dato %>% datatable(options = list(pageLength = 50,  autoWidth = TRUE),
+                      class = 'display nowrap compact',  rownames = FALSE)
+```
+
+## 4. Descripción general del análisis salarial
+
+### 1 Histograma de distribución salarial
+
+
+```{r}
+p2 <-ggplot(my_dato, aes(x = salary_in_usd)) +
+     geom_histogram(color = "white", fill = "#3498DB", bins = 30, alpha = 0.9) +
+     labs( x = "Salario en USD", y = "Frecuencia", 
+           title = "Histograma de salarios", 
+           subtitle = "Distribución de salarios en USD",
+           caption = "Fuente: conjunto de datos") +
+     scale_x_continuous(labels = scales::comma) + # formatea las etiquetas del eje x con comas
+     scale_y_continuous(expand = expansion(mult = c(0, 0.05))) + # reduce el espacio vacío en el eje y
+     theme_minimal() +
+     theme( text = element_text(family = "Arial", color = "#2C3E50"),
+     plot.title = element_text(size = 16, face = "bold", hjust = 0.5, color = "#1F618D"),
+     plot.subtitle = element_text(size = 12, face = "italic", hjust = 0.5, color = "#5D6D7E"),
+     axis.title = element_text(size = 12, face = "bold", color = "#34495E"),
+     axis.text = element_text(size = 10, color = "#34495E"),
+     panel.grid.major = element_line(color = "#D5D8DC"),
+     panel.grid.minor = element_blank(),
+     panel.background = element_rect(fill = "#F7F9F9", color = NA),
+     plot.background = element_rect(fill = "#FBFCFC", color = NA),
+     plot.margin = margin(5, 5, 5, 5))
+p2
+```
+
+Del histograma se observa que la distribución de salarios en el ámbito de la ciencia de datos tiene una clara asimetría positiva. La mayoría de los salarios se concentran en rangos más bajos, especialmente alrededor de los 150,000 dólares. Esto indica que una gran cantidad de puestos en ciencia de datos ofrecen salarios dentro de este rango. A medida que los salarios aumentan, la frecuencia disminuye, lo que refleja que los puestos con salarios altos son menos comunes. Sin embargo, en general, los salarios en esta área son competitivos.
+
+En el rango superior, sobre todo por encima de los 150,000 dólares, se identifican picos notables que corresponden a puestos de alto nivel, como científicos de datos senior o líderes técnicos. Estos roles ofrecen salarios significativamente mayores, evidenciando la alta demanda de profesionales con habilidades avanzadas y experiencia.
+
+### 2 La relación entre el tamaño de la empresa y el salario.
+
+Diagrama de caja de distribución salarial por tamaño de empresa
+
+```{r}
+p3 <- my_dato %>% ggplot(aes(x = company_size, y = salary_in_usd, fill = company_size)) + 
+                  geom_boxplot(show.legend = FALSE, outlier.colour = "red", outlier.shape = 8, outlier.size = 3) +
+                  scale_fill_brewer(palette = "Set3") +
+                  labs(x = "Tamaño de la empresa", 
+                       y = "Salario en USD", 
+                       title = "Distribución de salarios por tamaño de empresa") +
+                  theme_minimal() +
+                  theme(text = element_text(family = "Arial", color = "#333333"),
+                        plot.title = element_text(size = 16, face = "bold", hjust = 0.5, color = "#2C3E50"),
+                        axis.title = element_text(size = 12, face = "bold", color = "#34495E"),
+                        axis.text = element_text(size = 10, color = "#34495E"),
+                        panel.grid.major = element_line(color = "#DADFE1"),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_rect(fill = "#F9FAFB", color = NA),
+                        plot.background = element_rect(fill = "#FBFCFC", color = NA),
+                        plot.margin = margin(12, 12, 12, 12))
+ggplotly(p3) # Hacer que el plot sea interactiva
+```
+
+El gráfico muestra la distribución de salarios en USD según el tamaño de la empresa (L: grande, M: mediana, S: pequeña).  Las empresas grandes tienden a ofrecer los salarios más altos y tienen la mayor dispersión salarial, posiblemente debido a una mayor diversidad de roles y presupuestos. Por otro lado, las empresas pequeñas parecen tener menos variabilidad y salarios más bajos en general.
+Los valores atípicos en las empresas grandes sugieren que estas son más competitivas en el mercado laboral para ciertos roles clave, como "Principal Data Scientist" o "ML Engineer".
+Este análisis puede ayudar a los candidatos a orientar sus decisiones profesionales dependiendo de sus prioridades salariales y preferencias de estabilidad en el salario.
+
+
+
+### 3 La relación entre el tipo de empleo y el salario.
+
+Para más información sobre la calidad de cada tipo de ramen, creé una tabla con todos los detalles sobre cada tipo de ramen.
+
+Con respecto a la relación entre el tipo de empleo y el salario, hice dos gráficos, cero: diagrama de densidad de probabilidad de la distribución del salario para diferentes tipos de empleo, uno: diagrama de caja de la distribución del salario bajo diferentes tipos de empleo y niveles de experiencia.
+
+::: {.panel-tabset}
+#### Cero
+
+Gráfico de densidad de probabilidad de la distribución salarial para diferentes tipos de empleo
+
+
+```{r}
+p4 <- ggplot(my_dato, aes(x = salary_in_usd, fill = employment_type)) +
+      geom_density(alpha = 0.6, size = 1.2, smooth = TRUE) + 
+      scale_fill_brewer(palette = "Set1") + 
+      labs( x = "Salario en USD",
+            y = "Densidad",
+            title = "Densidad de Salarios por Tipo de Empleo",
+            subtitle = "Distribución de salarios según tipo de empleo") +
+      theme_minimal() +
+      theme( text = element_text(family = "Arial", color = "#333333"),
+             plot.title = element_text(size = 16, face = "bold", hjust = 0.5, color = "#2C3E50"),
+             plot.subtitle = element_text(size = 12, face = "italic", hjust = 0.5, color = "#5D6D7E"),
+             axis.title = element_text(size = 12, face = "bold", color = "#34495E"),
+             axis.text = element_text(size = 10, color = "#34495E"),
+             panel.grid.major = element_line(color = "#D5D8DC"),
+             panel.grid.minor = element_blank(),
+             panel.background = element_rect(fill = "#F7F9F9", color = NA),
+             plot.background = element_rect(fill = "#FBFCFC", color = NA),
+             plot.margin = margin(11, 11, 11, 11))
+p4
+```
+
+El tipo de empleo influye significativamente en el rango de salarios percibidos. Los empleos a tiempo completo son los más competitivos y variados en términos de compensación. Por otro lado, el trabajo freelance y los contratos temporales ofrecen flexibilidad o estabilidad a corto plazo, pero con menor potencial de salarios altos. Finalmente, los empleos de medio tiempo son adecuados para quienes buscan compromisos laborales más ligeros, aunque con expectativas salariales más bajas.
+
+Esta información puede servir de guía para quienes buscan optimizar su relación entre el tipo de empleo y la compensación económica deseada.
+
+
+#### Uno
+
+diagrama de caja de la distribución del salario bajo diferentes tipos de empleo y niveles de experiencia.
+
+```{r}
+p5 <- my_dato %>% ggplot(aes(x = employment_type, y = salary_in_usd)) +
+               geom_boxplot() +
+               theme_minimal() +
+               labs(x = "Tipo de empleo", y = "Salario en USD",
+                    title = "Distribución de salarios por tipo de empleo") +
+               transition_states(experience_level,
+                                 transition_length = 2,
+                                 state_length = 1) +
+               ease_aes('linear')
+p5
+```
+
+Este análisis subraya cómo el tipo de empleo afecta las oportunidades salariales .El tipo de empleo tiene un impacto directo en las oportunidades salariales, reflejando diferencias significativas en la mediana y variabilidad de los ingresos. Los empleos a tiempo completo destacan por ofrecer los salarios más altos y una mayor dispersión, indicando tanto oportunidades como competencia. Por otro lado, los contratos temporales y los trabajos freelance presentan una mayor estabilidad salarial, aunque con límites más definidos. Finalmente, los empleos de medio tiempo tienden a tener los salarios más bajos, adecuados para roles con menor compromiso.
+
+:::
+- - - - - 
+
+### 4 Diagrama de dispersión de años de trabajo y nivel salarial.
+
+Este gráfico fue elaborado para analizar la relación entre los salarios en USD y los años laborales (2020-2023), con el objetivo de identificar posibles tendencias en la evolución de las compensaciones a lo largo del tiempo. La línea de regresión añadida permite visualizar la dirección general del cambio salarial.
+
+```{r}
+p6 <- ggplot(my_dato, aes(x = work_year, y = salary_in_usd)) + 
+      geom_point(color = "#3498DB", size = 3, alpha = 0.7) +  
+      geom_jitter(color = "#3498DB", width = 0.2, height = 0.2, alpha = 0.5) +  # Puntos fluctuantes con transparencia
+      geom_smooth(method = "lm", se = FALSE, color = "#E74C3C", size = 1.2, formula = y ~ x) +  # Línea suavizada
+      labs(x = "Año laboral",y = "Salario en USD",
+           title = "Salario vs. Año laboral",
+           subtitle = "Línea de regresión que muestra la tendencia") +
+      theme_minimal() +
+      theme( text = element_text(family = "Arial", color = "#333333"),
+             plot.title = element_text(size = 16, face = "bold", hjust = 0.5, color = "#2C3E50"),
+             plot.subtitle = element_text(size = 12, face = "italic", hjust = 0.5, color = "#5D6D7E"),
+             axis.title = element_text(size = 12, face = "bold", color = "#34495E"),
+             axis.text = element_text(size = 10, color = "#34495E"),
+             panel.grid.major = element_line(color = "#DADFE1"),
+             panel.grid.minor = element_blank(),
+             panel.background = element_rect(fill = "#F9FAFB", color = NA),
+             plot.background = element_rect(fill = "#FBFCFC", color = NA),
+             plot.margin = margin(10, 10, 10, 10))
+p6
+```
+
+El análisis muestra una tendencia ascendente en los salarios a lo largo de los años, lo que sugiere un crecimiento constante en las compensaciones promedio del mercado laboral. Aunque la dispersión de los datos es significativa, especialmente en los rangos salariales altos, el aumento progresivo en la línea de regresión refleja que, en general, los salarios han mejorado entre 2020 y 2023. Esto podría estar relacionado con la creciente demanda de ciertos roles, ajustes por inflación o mejoras en las políticas de compensación.
+
+
+## 5. Análisis de región y empleo.
+
+Los dos gráficos siguientes analizan las diferencias en los niveles salariales desde la perspectiva de la ubicación de la empresa y la residencia de los empleados, con el propósito de explorar el impacto bidireccional de la geografía en el salario: no sólo está sujeto al entorno económico de la empresa, sino también al costo de vida y la demanda del mercado en el área donde se encuentran los empleados.
+
+
+::: {.panel-tabset}
+
+### 1 Los 10 países con el salario medio más alto
+
+Este gráfico muestra los 10 principales países o regiones con el salario promedio más alto por ubicación de la empresa, con el objetivo de analizar el impacto de la ubicación de la empresa en los niveles salariales. A través de la observación, se puede encontrar que el entorno económico y el desarrollo industrial del país donde está ubicada la empresa tienen un impacto significativo en los salarios.
+
+```{r}
+p7 <- my_dato %>% group_by(company_location) %>%
+               summarise(salary = mean(salary_in_usd, na.rm = TRUE)) %>%
+               arrange(desc(salary)) %>%
+               head(10) %>%
+               ggplot(aes(x = salary, y = reorder(company_location, salary), fill = company_location)) +
+               geom_col(show.legend = FALSE, width = 0.7) + 
+               scale_fill_brewer(palette = "Set3") + 
+               labs( x = "Salario promedio (USD)", y = "Ubicación de la empresa",
+                     title = "Las 10 principales ubicaciones por salario promedio",
+                     subtitle = "Clasificación de ubicaciones según salarios promedio") +
+               theme_minimal() +
+               theme(
+               text = element_text(family = "Arial", color = "#333333"),
+               plot.title = element_text(size = 16, face = "bold", hjust = 0.5, color = "#2C3E50"),
+               plot.subtitle = element_text(size = 12, face = "italic", hjust = 0.5, color = "#5D6D7E"),
+               axis.title = element_text(size = 12, face = "bold", color = "#34495E"),
+               axis.text = element_text(size = 10, color = "#34495E"),
+               panel.grid.major = element_line(color = "#DADFE1"),
+               panel.grid.minor = element_blank(),
+               panel.background = element_rect(fill = "#F9FAFB", color = NA),
+               plot.background = element_rect(fill = "#FBFCFC", color = NA),
+               plot.margin = margin(10, 10, 10, 10))
+p7
+```
+
+Israel (IL) y Puerto Rico (PR) encabezan la lista salarial, lo que indica que las empresas en estos países son extremadamente competitivas, especialmente en campos innovadores y de alta tecnología. Estados Unidos (EE.UU.) y Canadá (CA) mantienen niveles salariales relativamente altos, lo que refleja sus mercados maduros y sus sistemas económicos desarrollados.
+
+
+### 2 Países con los 10 primeros empleados con el salario medio más alto
+
+Este gráfico analiza el impacto del lugar donde viven los empleados sobre los salarios promedio, mostrando las 10 principales áreas de residencia con los salarios promedio más altos. Este gráfico revela el papel potencial de los factores geográficos en las diferencias salariales.
+
+
+```{r}
+p8 <- my_dato %>%
+      group_by(employee_residence) %>%
+      summarise(salary=mean(salary_in_usd)) %>%
+      arrange(desc(salary)) %>% head(10) %>%
+      ggplot(aes(x=salary, y=reorder(employee_residence, salary), fill=employee_residence)) + 
+      geom_col(show.legend = F) +
+      theme_minimal() +
+      labs(x="Salario promedio", y="Residencia del empleado",
+           title="Top 10 de residencia de los empleados según salario promedio") +
+      theme_minimal() +
+      theme(text = element_text(family = "Arial", color = "#333333"),
+            plot.title = element_text(size = 16, face = "bold", hjust = 0.5, color = "#2C3E50"),
+            plot.subtitle = element_text(size = 12, face = "italic", hjust = 0.5, color = "#5D6D7E"),
+            axis.title = element_text(size = 12, face = "bold", color = "#34495E"),
+            axis.text = element_text(size = 10, color = "#34495E"),
+            panel.grid.major = element_line(color = "#DADFE1"),
+            panel.grid.minor = element_blank(),
+            panel.background = element_rect(fill = "#F9FAFB", color = NA),
+            plot.background = element_rect(fill = "#FBFCFC", color = NA),
+            plot.margin = margin(10, 10, 10, 10))
+p8
+```
+
+El salario promedio de los empleados en Israel (IL) está muy por encima, lo que indica un entorno económico sólido y una demanda de altas habilidades. Malasia (MY) y Puerto Rico (PR) también obtuvieron mejores resultados, lo que sugiere que puede haber un efecto de agrupación de empleos bien remunerados en sus mercados.
+
+:::
+
+En general, Israel (IL), como ubicación de la empresa o residencia de los empleados, tiene una ventaja absoluta en términos de salario promedio. Esto puede deberse al buen desempeño de su industria de alta tecnología. Además, los niveles salariales en Puerto Rico (PR), Estados Unidos (EE.UU.) y otras economías desarrolladas son bastante obvios, y la ubicación geográfica tiene un impacto significativo en los salarios, lo que deben considerar los solicitantes de empleo y las empresas al elegir un trabajo o montar una oficina.
+
+
+3 Mapa de distribución de niveles salariales medios en diferentes países.
+
+Este mapa de distribución salarial global muestra los niveles salariales promedio en diferentes países, distinguidos por la profundidad del color, lo que puede ayudarnos a comprender intuitivamente las diferencias regionales en los salarios globales. Las áreas oscuras representan países con salarios altos, mientras que las áreas claras muestran países con salarios bajos.
+
+```{r}
+df <- my_dato %>%
+      group_by(company_location) %>% 
+      summarise(salary=mean(salary_in_usd))
+   
+df$region <- countrycode(df$company_location, "iso2c", 'country.name')
+
+df$region[df$region=="United States"] <- "USA"
+
+map_data("world") %>% left_join(df, by = "region") %>%
+                      ggplot(aes(x = long, y = lat, group = group, fill = salary)) +
+                      geom_polygon(color = "gray", size = 0.2) + 
+                      scale_fill_gradient(low = "lightblue", high = "darkred", na.value = "gray90") +  # Adjust color scheme
+                      labs( title = "Mapa mundial de salarios promedio por ubicación",
+                            subtitle = "Coloreado por salario promedio (USD)",
+                            fill = "Avg Salary (USD)") +
+                      theme_minimal() +
+                      theme( text = element_text(family = "Arial", color = "#333333"),
+                             plot.title = element_text(size = 16, face = "bold", hjust = 0.5, color = "#2C3E50"),
+                             plot.subtitle = element_text(size = 12, face = "italic", hjust = 0.5, color = "#5D6D7E"),
+                             axis.title = element_blank(),
+                             axis.text = element_blank(),
+                             panel.grid = element_blank(),
+                             panel.background = element_rect(fill = "#FBFCFC", color = NA),
+                             plot.background = element_rect(fill = "#F9FAFB", color = NA),
+                             plot.margin = margin(10, 10, 10, 10))
+df
+```
+
+Como puede verse en la figura, América del Norte, partes de Europa e Israel (IL) son las regiones con los niveles salariales más altos del mundo, probablemente debido a las economías desarrolladas y la concentración de empleos altamente calificados en estos países. En comparación, los salarios en gran parte de Asia, África y América del Sur son relativamente bajos. Esta distribución refleja el desequilibrio entre el desarrollo económico global y la concentración industrial.
+
+
+## 6. Análisis del trabajo remoto
+
+### 1 Distribución proporcional de formularios de trabajo
+
+Este gráfico circular muestra la distribución de empleos por proporción de trabajo remoto, dividido en tres categorías: completamente presencial (0% remoto), completamente remoto (100% remoto) y parcialmente remoto (50% remoto). Esta cifra puede utilizarse para explorar la popularidad del trabajo remoto en el mercado laboral moderno y sus características de distribución modal.
+
+```{r}
+p10_1 <- my_dato %>% group_by(remote_ratio) %>% summarise(count=n())
+
+p10_2 <- plot_ly(p10_1, labels = ~remote_ratio, values = ~count, type = 'pie', 
+               textinfo = 'label+percent', textposition = 'inside', 
+               insidetextfont = list(color = 'white')) %>%
+       layout( title = list( text = 'Distribución de empleos según ratio de trabajo remoto',
+                             x = 0.5,  # Center the title
+                             xanchor = 'center',
+                             yanchor = 'top',
+                             font = list(size = 20, family = 'Arial', color = '#2C3E50')),
+               showlegend = TRUE,  # Mostrar la leyenda
+       legend = list( orientation = 'h',  # Leyenda horizontal
+                      x = 0.5,
+                      xanchor = 'center',
+                      y = -0.1,
+                      yanchor = 'top',
+                      font = list(size = 12, family = 'Arial', color = '#34495E')),
+      margin = list(t = 50, b = 50, l = 50, r = 50),
+      plot_bgcolor = '#F9FAFB',  
+      paper_bgcolor = '#FBFCFC', 
+      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE) ) %>%
+      add_pie(hole = 0.4,  # Crear un gráfico de anillos
+              marker = list(colors = c('#3498DB', '#2ECC71', '#E74C3C', '#F39C12')))  # Paleta de colores personalizada
+
+p10_2
+```
+
+Como puede verse en la figura, los puestos totalmente presenciales representan la mayor proporción con un 51,2%, seguidos de los puestos totalmente remotos con un 43,8%. La proporción de trabajo remoto parcial es la más baja, sólo el 5,03%.
+En general, esta distribución muestra que el modelo de empleo moderno está experimentando una transformación, pero esta transformación aún está limitada por las necesidades de la industria y la cultura corporativa. La alta proporción de trabajo totalmente remoto indica que es posible que más puestos se vuelvan remotos en el futuro, pero la alta proporción de trabajo totalmente presencial también muestra que no se puede ignorar el valor de la colaboración in situ. A medida que las empresas se adapten gradualmente a modelos de gestión del trabajo remoto o híbrido, algunos modelos de trabajo remoto pueden aumentar gradualmente en el futuro. Cuando las empresas se deciden por modelos de oficina, necesitan equilibrar eficiencia, flexibilidad y satisfacción de los empleados para encontrar la solución que mejor se adapte a ellos.
+
+### 2 La relación entre forma de trabajo y salario
+
+```{r}
+salary_by_work_type <- my_dato %>% group_by(remote_ratio, work_year) %>% 
+                                   summarise(avg_salary = mean(salary_in_usd, na.rm = TRUE)) %>%
+                                   mutate(work_type = case_when(remote_ratio == 0 ~ "Presencial",
+                                                                remote_ratio == 50 ~ "Mixto",
+                                                                remote_ratio == 100 ~ "Remoto"))
+
+p11 <- ggplot(salary_by_work_type, aes(x = work_type, y = avg_salary, fill = work_type)) +
+       geom_bar(stat = "identity", width = 0.7) +
+       geom_text(aes(label = round(avg_salary, 2)), vjust = -0.5, size = 4) +
+       scale_fill_manual(values = c("#4CAF50", "#FFC107", "#2196F3")) +
+       labs( title = "Relación entre Forma de Trabajo y Salario Promedio",
+             subtitle = "Año: {closest_state}",
+             x = "Forma de Trabajo",
+             y = "Salario Promedio (USD)") +
+  theme_minimal() +
+  transition_states(work_year, transition_length = 2, state_length = 1) + 
+  enter_fade() +
+  exit_fade()
+
+p11
+```
+
+El gráfico de barras dinámico generado muestra vívidamente los niveles salariales en diferentes modos de trabajo y muestra las tendencias a lo largo de los años. De esta forma, no sólo podrás tener una comprensión más intuitiva de los datos, sino que también podrás ver claramente la evolución del salario a lo largo del tiempo. Esto tiene implicaciones importantes para analizar la competitividad salarial de los modelos de trabajo flexible.
+
+## Bibliografía
+
+Para la realización de los gráficos y los comentarios pertinentes me he basado en la información que voy a exponer en los siguientes párrafos.
+
+[¿A qué se dedica un analista de datos?](https://www.bbva.com/es/radiografia-analista-datos/)
+
+[Salario medio para Analista De Datos en España](https://es.talent.com/salary?job=analista+de+datos#:~:text=%C2%BFCu%C3%A1nto%20gana%20un%20Analista%20de%20datos%20en%20Espa%C3%B1a%3F&text=El%20salario%20analista%20de%20datos,hasta%20%E2%82%AC%20)
+
+Con el paquete plotly, he conseguido realizar gráficos interactivos.
+
+Para realizar la tabla interactiva, he utilizado el paquete gt.
+
+Tambiém he consultado trabajos realizados por nuestros compañeros el año anterior. Estos últimos los podemos encontrar [aquí](https://perezp44.github.io/intro-ds-24-25-web/mas-cosas/07-trabajos_2023-24.html).
+
+- - - 
+
+<br>
+
+Con esto acabo mi trabajo para BigData!!
+
+<br>
+
+- - - 
+
+
+
+
+
+
+
